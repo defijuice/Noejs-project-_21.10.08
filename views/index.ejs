@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+    <!-- Font Awesome CSS -->
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.js"
+            integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"
+            integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.js"></script>
+
+    <link href="../static/mystyle.css" rel="stylesheet">
+    <title>노드_심화과제</title>
+
+    <script src="../public/api.js"></script>
+
+
+    <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const writeId = urlParams.get("writeId");
+
+        // Html 파일이 전부 로딩되었을 경우 실행
+        $(document).ready(function () {
+            get_posts()
+        })
+
+        // Posts를 가져온다.여기다가 !!!!!!!!!!!!!댓글 불러오는 내용을 넣는게 맞나??
+        function get_posts() {
+          $("#body").empty()
+            $("#write").empty();
+            $('#tbody-box').empty() // 상품창의 리스트를 삭제한다.
+            $.ajax({
+                type: "GET",
+                url: `/api/posts`,
+                data: {},
+                success: function (response) {
+                    //카테고리에 해당하는 goods를 가지고 온다.
+                    let posts = response["result"]
+                    if(posts == null){
+                        alert("게시글 존재하지 않음")
+                    }
+                    else{
+                        
+                        make_card(posts)
+                    for (let i = 0; i < posts.length; i++) {
+                        const _id = posts[i]['_id']
+                        const user = posts[i]['user']
+                        const title = posts[i]['title']
+                        const createdAt = posts[i]['createdAt']
+                        make_post(_id, user, title, createdAt)
+                    }
+                }
+            }})}
+        //댓글 기능
+        function make_card(item) {
+            let htmlTemp = `
+            <p><h1>${item['title']}</h1></p>
+            <p>${item['name']}</p>
+            <div class="jumbotron">
+            <h1>${item['body']}</h1>
+            <p>${item['date']}</p>
+            <p><a class="btn btn-primary btn-lg" href="/delwrite?writeId=${item['writeId']}" role="button">수정하기</a></p>
+            </div>
+            `
+            $("#body").append(htmlTemp)
+        }
+        //댓글 기능
+        function make_re(item){
+            let htmlTemp =`<tr val = "${item["_id"]}">
+                <th>
+                    ${item["username"]}
+                </th>
+                <th id = "test">
+                    <input type="text" id = "name" placeholder="작성자입력" value="${item["rebody"]}" readonly>
+                </th>
+                <th>
+                    <button onclick="pat_rewrite(this)"> 수정</button><button onclick="del_rewrite(this)"> 삭제</button>
+                    <button class = "hide" onclick="dopat_rewrite(this)"> 완료</button><button class = "hide" onclick="fall_rewrite(this)"> 취소</button>
+                </th>
+            </tr>`
+            $("#write").append(htmlTemp);
+
+        }
+        // 가져온 Posts를 Table Rows로 삽입한다.
+        function make_post(_id, user, title, createdAt,rewrite) {
+            let temp_html = `
+            <tr id="word-${_id}">
+                <td>${user}</td>
+                <td><a href="/view/${_id}">${title}</a></td>
+                <td>${createdAt}</td>
+            </tr>`
+            $('#tbody-box').append(temp_html)
+        }
+
+    </script>
+    <style>
+        .card {
+            cursor: pointer;
+        }
+
+        html {
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-sm navbar-dark bg-sparta justify-content-end">
+    <a class="navbar-brand" href="/">
+        <img src="/static/logo_big_tr.png" width="30" height="30" class="d-inline-block align-top" alt="">
+        스파르타 게시판
+    </a>
+    <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="true"
+            aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <div class="navbar-collapse collapse flex-grow-0 ml-auto" id="navbarSupportedContent" style="">
+        <ul class="navbar-nav mr-auto text-right">
+            <li class="nav-item" id="link-cart">
+                <a class="nav-link" href="/write">
+                    게시글 작성
+                </a>
+            </li>
+
+        </ul>
+    </div>
+    <div class="navbar-collapse collapse flex-grow-0 ml-auto" id="navbarSupportedContent" style="">
+      <ul class="navbar-nav mr-auto text-right">
+          <li class="nav-item" id="link-cart">
+              <a class="nav-link" href="/login">
+                  로그인 하기
+              </a>
+          </li>
+
+          <li class="nav-item" id="link-cart">
+            <a type="button" class="nav-link" onclick="signOut()">
+                로그아웃
+            </a>
+        </li>
+
+      </ul>
+  </div>
+</nav>
+<!-- <div class="wrap">
+  <div class="card mx-auto" style="max-width: 480px">
+    <div class="card-body">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="basic-addon1"
+            ><i class="fa fa-user-o" aria-hidden="true"></i
+          ></span>
+        </div>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="닉네임"
+          aria-label="Username"
+          aria-describedby="basic-addon1"
+          id="inputEmail"
+        />
+      </div>
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="basic-addon2"
+            ><i class="fa fa-lock" aria-hidden="true"></i
+          ></span>
+        </div>
+        <input
+          type="password"
+          class="form-control"
+          placeholder="비밀번호"
+          aria-label="Password"
+          aria-describedby="basic-addon2"
+          id="inputPassword"
+        />
+      </div>
+      <div class="row d-flex justify-content-around">
+        <div class="col-6 pr-2">
+          <button
+            type="button"
+            class="btn btn-sparta btn-block"
+            onclick="sign_in()"
+          >
+            로그인
+          </button>
+        </div>
+        <div class="col-6 pl-2">
+          <button
+            type="button"
+            class="btn btn-outline-sparta btn-block"
+            onclick="window.location.href='/register.html'"
+          >
+            회원가입
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+<div class="wrap">
+    <div id="postList" class="mb-3">
+        <table class="table">
+
+            <thead class="thead-light">
+            <tr>
+                <th scope="col" style="width:30%">작성자</th>
+                <th scope="col">게시글</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody id="tbody-box">
+
+            </tbody>
+        </table>
+    </div>
+
+
+</div>
+<!-- <script type="text/javascript" src="../public/api.js"></script>
+<script>
+  if (localStorage.getItem("token")) {
+    getSelf(function() {
+      alert("이미 로그인이 되어있습니다. 상품 페이지로 이동합니다.");
+      window.location.replace("/write");
+    });
+  }
+
+  function sign_in() {
+    // let nickname = $("#inputemail").val();
+    let nickname = $("#inputNickname").val();
+    let password = $("#inputPassword").val();
+    $.ajax({
+      type: "POST",
+      url: "/api/auth",
+      data: {
+        nickname: nickname,
+        password: password,
+      },
+      success: function (response) {
+        localStorage.setItem("token", response.token);
+        window.location.replace("/write");
+      },
+      error: function (error) {
+        customAlert(error.responseJSON.errorMessage);
+      },
+    });
+  
+
+  function customAlert(text) {
+    $("#alertText").text(text);
+    $("#alertModal").modal("show");
+  }
+};
+</script>
+
+</body>
+        
+</html>

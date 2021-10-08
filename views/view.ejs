@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+
+    <!-- Font Awesome CSS -->
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.js"
+            integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+            integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"
+            integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.js"></script>
+
+    <link href="/static/mystyle.css" rel="stylesheet">
+    <title>노드_심화과제</title>
+
+    <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);      
+        const writeId = urlParams.get("writeId");
+
+        $(document).ready(function () {
+        })
+
+        function modify_post() {
+            let pathName = location.pathname.split("/")[2]
+            location.href = `/modify/${pathName}`
+        }
+
+    </script>
+<!-- 댓글 기능 관련 스크립트     -->
+<script type="text/javascript" src="../public/api.js"></script>
+<script>
+//댓글 작성
+      
+        let user; 
+      let pathName = location.pathname.split("/")[2]
+
+
+    function get_write() {
+            $("#body").empty()
+            $("#write").empty();
+            console.log(writeId)
+            $.ajax({
+                type: "GET",
+                url: `/api/posts/write/${pathName}`,
+                data: {},
+                success: function (response) {
+                    let write = response["detail"]
+                    if(write == null){
+                        alert("게시글존재하지않음")
+                    }
+                    else{
+                        
+                        make_card(write)
+                        
+                        for(rewr of write["rewrite"]){
+                            make_re(rewr)
+                            
+                        }
+                        
+                    }
+                }
+            })
+        }     
+/////
+function make_card(item) {
+            let htmlTemp = `
+            <p><h1>${item['title']}</h1></p>
+            <p>${item['name']}</p>
+            <div class="jumbotron">
+            <h1>${item['body']}</h1>
+            <p>${item['date']}</p>
+            <p><a class="btn btn-primary btn-lg" href="/delwrite?writeId=${item['writeId']}" role="button">수정하기</a></p>
+            </div>
+            `
+            $("#body").append(htmlTemp)
+        }        
+        function make_re(item){
+            let htmlTemp =`<tr val = "${item["_id"]}">
+                <th>
+                    ${item["username"]}
+                </th>
+                <th id = "test">
+                    <input type="text" id = "name" placeholder="작성자입력" value="${item["rebody"]}" readonly>
+                </th>
+                <th>
+                    <button onclick="pat_rewrite(this)"> 수정</button><button onclick="del_rewrite(this)"> 삭제</button>
+                    <button class = "hide" onclick="dopat_rewrite(this)"> 완료</button><button class = "hide" onclick="fall_rewrite(this)"> 취소</button>
+                </th>
+            </tr>`
+            $("#write").append(htmlTemp);   
+          }     
+
+//댓글 작성
+function up_rewrite() {
+  getSelf(function (u) { user = u; });
+            let name = $('#user').val();
+            console.log(name)
+            let rebody = $("#rebody").val()
+            if(rebody == ""){
+                alert("댓글 내용을 입력해주세요")
+                $("#rebody").focus()
+                return;
+            }
+            $.ajax({
+                type: "POST",
+                url: `/api/posts/rewrite/${pathName}`,
+                headers: { authorization: `Bearer ${localStorage.getItem("token")}`, },
+                data: {name:name, rebody:rebody},
+                success: function (response) {
+                    alert(response["result"])
+                    
+                    get_write()
+                    window.location.reload();
+                },
+                error: function (error) {
+                    alert(error.responseJSON.errorMessage);
+                },
+            })
+        }       
+
+
+
+
+        //댓글 수정
+        function pat_rewrite(test) {
+          console.log(text)
+            const reid = $(test).parents("tr").attr('val')
+            let a = $(test).parents("tr");
+            $(a).children("#text").children("#name").removeAttr('readonly');
+            const rebody = $(a).children("#text").children("#name").val();
+            frewrite = $(a).children("#text").children("#name").val();
+            $(test).parent().children("button").toggleClass("hide");
+            
+        }
+        //수정 완료! 여기알어ㅏㄹ엄링럼ㅇㄴㄹㅇㅁ
+        function dopat_rewrite(test) {
+            const reid = $(test).parents("tr").attr('val')
+            let a = $(test).parents("tr");//여기랑 아래 2줄
+            const rebody = $(a).children("#text").children("#name").val();
+            frewrite = $(a).children("#text").children("#name").val();
+            console.log(rebody)//여기 출력 안됨
+
+            $.ajax({
+                type: "PATCH",
+                url: `/api/posts/rewrite/${pathName}`,
+                headers: { authorization: `Bearer ${localStorage.getItem("token")}`, },
+                data: {rebody:rebody,reid: reid},
+                success: function (response) {
+                    alert(response["result"])
+                    window.location.reload();
+                },
+                error: function (error) {
+                    alert(error.responseJSON.errorMessage);
+                    window.location.reload();
+                },
+            })
+            
+        }
+        //수정 취소
+        function fall_rewrite(test) {
+            let a = $(test).parents("tr");
+            $(a).children("#test").children("#name").attr('readonly', 'readonly');
+            $(test).parent().children("button").toggleClass("hide");
+            $(a).children("#test").children("#name").val(frewrite) 
+            
+        }
+        //댓글삭제ㅇ;ㅁㄹ어ㅣㅁ러ㅣㅇ런미럼니런미ㅏㅣㅓㅇㄹ님너리
+        function del_rewrite(test) {
+            if(confirm("정말 삭제하시겠습니까??") == false){
+                return;
+            }
+            const reid = $(test).parents("tr").attr('val')
+            $.ajax({
+                type: "DELETE",
+                url: `/api/posts/rewrite/${pathName}`,
+                headers: { authorization: `Bearer ${localStorage.getItem("token")}`, },
+                data: {reid: reid},
+                success: function (response) {
+                    alert(response["result"])
+                    window.location.reload();
+                },
+                error: function (error) {
+                    alert(error.responseJSON.errorMessage);
+                },
+            })
+            
+        }
+        function number2decimals(num) {
+            return (Math.round(num * 100) / 100).toFixed(2);
+        }
+        $(this).next("tr").toggleClass("hide");          
+
+</script>
+
+
+    <style>
+        .card {
+            cursor: pointer;
+        }
+
+        html {
+            overflow: auto;
+        }
+        .hide{
+            display: none;
+
+        }
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-sm navbar-dark bg-sparta justify-content-end">
+    <a class="navbar-brand" href="/">
+        <img src="/static/logo_big_tr.png" width="30" height="30" class="d-inline-block align-top" alt="">
+        스파르타 게시판
+    </a>
+    <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="true"
+            aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <div class="navbar-collapse collapse flex-grow-0 ml-auto" id="navbarSupportedContent" style="">
+        <ul class="navbar-nav mr-auto text-right">
+            <li class="nav-item" id="link-cart">
+
+                <a class="nav-link" href="/write"> 게시글 작성 </a>
+
+            </li>
+
+        </ul>
+    </div>
+
+</nav>
+<div class="wrap">
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end">
+            <div>
+                <div>
+                    <h3 id="word" style="display: inline;"><%= title %></h3>
+                    <button id="btn-modify" class="btn btn-sparta btn-lg" onclick="modify_post()">
+                        <i class="fa fa-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <h5 id="pronunciation" style="display: inline;"><%= user %></h5>
+                <h6 id="pronunciation" style="display: inline;"><%= createdAt %></h6>
+            </div>
+
+        </div>
+        <hr>
+        <div id="definitions">
+            <div style="padding:10px">
+                <%= content %>
+            </div>
+        </div>
+
+    </div>
+
+
+<div class="form-group">
+  <textarea class="form-control" id="rebody" placeholder="댓글" rows="3"></textarea>
+<thead>
+  <tbody id = "write">
+  <tr val = '1'>
+    <button onclick="up_rewrite()"> 작성</button>
+    </tr>
+  </tbody>
+</thead>
+</tr>
+<table class="table">
+  <thead>
+      <tr>
+          <th>
+              작성자
+          </th>
+          <th>
+              내용
+          </th>
+
+      </tr>
+  </thead>
+<div>
+  <tbody id = "write">
+    <% for(let i = 0; i < rewrite.length ; i++){ %>
+      <tr val = <%= rewrite[i]['_id'] %>>
+          <th>
+            <%= rewrite[i]['username'] %>
+          </th>
+          <th id="text">
+            <input type="text" id = "name" placeholder="작성자입력" value="<%= rewrite[i]['rebody'] %>" readonly>
+          </th>
+          <th>
+            <button onclick="pat_rewrite(this)"> 수정</button> <button onclick="del_rewrite(this)"> 삭제</button>      
+            <button class = "hide" onclick="dopat_rewrite(this)"> 완료</button><button class = "hide" onclick="fall_rewrite(this)"> 취소</button>
+          </th>
+        </tr>
+      <% } %>      
+
+    </div> 
+
+  </tbody>
+</table>
+
+
+</div>
+
+
+</body>
+
+</html>
